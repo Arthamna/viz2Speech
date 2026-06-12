@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Viz2Speech",
+    "slug": "viz2speech",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "viz2speech",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Viz2Speech menggunakan kamera untuk mengambil gambar dan membuat deskripsi suara.",
+        "NSMicrophoneUsageDescription": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA", "RECORD_AUDIO"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Viz2Speech menggunakan kamera untuk mengambil gambar dan membuat deskripsi suara.",
+          "microphonePermission": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan."
+        }
+      ]
+    ]
+  }
+}
