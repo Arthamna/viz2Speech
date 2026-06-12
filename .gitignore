@@ -5,6 +5,8 @@ node_modules/
 CLAUDE.md
 AGENTS.md
 SNACK.md
+.idea
+.vscode
 
 # Expo
 .expo/
