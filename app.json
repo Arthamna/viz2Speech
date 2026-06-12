@@ -10,11 +10,19 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Viz2Speech menggunakan kamera untuk mengambil gambar dan membuat deskripsi suara.",
-        "NSMicrophoneUsageDescription": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan."
-      }
+        "NSMicrophoneUsageDescription": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.iasha.viz2speech"
     },
     "android": {
-      "permissions": ["CAMERA", "RECORD_AUDIO"]
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.iasha.viz2speech"
     },
     "plugins": [
       [
@@ -23,7 +31,13 @@
           "cameraPermission": "Viz2Speech menggunakan kamera untuk mengambil gambar dan membuat deskripsi suara.",
           "microphonePermission": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan."
         }
-      ]
-    ]
+      ],
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "36fac89e-8ae3-460c-a21a-08c8621c30a1"
+      }
+    }
   }
 }

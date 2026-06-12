@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useIsFocused } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Platform,
@@ -30,9 +31,10 @@ type Phase = 'scan' | 'processing' | 'result';
 const SWIPE_THRESHOLD = 40;
 
 export function CameraScreen({ navigation }: Props) {
-  const insets = useSafeAreaInsets();
+  const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const insets = useSafeAreaInsets();
 
   const [modeIndex, setModeIndex] = useState(DEFAULT_MODE_INDEX);
   const [phase, setPhase] = useState<Phase>('scan');
@@ -150,7 +152,9 @@ export function CameraScreen({ navigation }: Props) {
         accessibilityHint="Layar kamera dengan kontrol berbasis gestur.">
         <StatusBar style="light" />
 
-        <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        {isFocused && (
+          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
+        )}
 
         {/* Caption banner — only after a result is produced. */}
         {phase === 'result' && !!caption && (
