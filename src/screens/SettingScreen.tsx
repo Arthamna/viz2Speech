@@ -1,80 +1,88 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import { SETTINGS_ITEMS } from '../data/content';
 import { TopBar } from '../components/TopBar';
+import { TapToGoBack } from '../components/TapToGoBack';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Setting'>;
 
-/** Settings list — mirrors the Figma Settings frame (display only). */
+/** Settings list — mirrors the Figma "Setting" frame (display only). */
 export function SettingScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.screen, { paddingTop: insets.top + 56 }]}>
+    <TapToGoBack
+      onBack={() => navigation.goBack()}
+      style={[styles.screen, { paddingTop: insets.top }]}
+      accessibilityLabel="Pengaturan">
       <StatusBar style="dark" />
       <TopBar
         onPressSettings={() => {}}
         onPressHelp={() => navigation.navigate('Help')}
       />
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, { marginBottom: insets.bottom + 5 }]}>
         <Text style={styles.title}>Settings</Text>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
-          {SETTINGS_ITEMS.map((item) => (
+          {SETTINGS_ITEMS.map((item, i) => (
             <View
-              key={item.label}
+              key={`${item.label}-${i}`}
               style={styles.row}
               accessibilityRole="text"
-              accessibilityLabel={`${item.label}${item.value ? `, ${item.value}` : ''}`}>
-              <MaterialCommunityIcons
+              accessibilityLabel={item.label}>
+              <MaterialIcons
                 name={item.icon as any}
-                size={24}
-                color={colors.accent}
+                size={26}
+                color={colors.iconGold}
                 style={styles.rowIcon}
               />
               <Text style={styles.rowLabel}>{item.label}</Text>
-              {!!item.value && <Text style={styles.rowValue}>{item.value}</Text>}
             </View>
           ))}
         </ScrollView>
       </View>
-    </View>
+    </TapToGoBack>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.screenLight,
-    paddingHorizontal: 15,
-    paddingBottom: 24,
+    backgroundColor: colors.screen,
   },
   panel: {
     flex: 1,
+    marginHorizontal: 15,
+    marginTop: 6,
     backgroundColor: colors.panel,
-    borderRadius: 24,
-    paddingVertical: 24,
+    borderRadius: 10,
+    paddingTop: 22,
   },
   title: {
     color: colors.textOnDark,
-    fontSize: 26,
-    fontWeight: '800',
+    fontFamily: fonts.bold,
+    fontSize: 24,
     textAlign: 'center',
-    marginBottom: 18,
+    marginBottom: 28,
   },
-  list: { paddingHorizontal: 24, gap: 4 },
+  list: { paddingLeft: 25, paddingRight: 20 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    height: 38,
   },
-  rowIcon: { width: 34 },
-  rowLabel: { color: colors.textOnDark, fontSize: 17, fontWeight: '600', flex: 1 },
-  rowValue: { color: colors.textMutedOnDark, fontSize: 14 },
+  rowIcon: { width: 30 },
+  rowLabel: {
+    color: colors.textOnDark,
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    marginLeft: 16,
+  },
 });

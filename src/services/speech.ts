@@ -17,6 +17,16 @@ export function speak(text: string, options?: Speech.SpeechOptions) {
   Speech.speak(text, { ...DEFAULT_OPTIONS, ...options });
 }
 
+/**
+ * Speak without interrupting the current utterance — the text is appended to the
+ * queue and played once the current one finishes. Used e.g. to announce the
+ * active mode ("Mode Lingkungan") right after the "Kembali" cue when returning
+ * to the camera, so both are heard in order.
+ */
+export function speakQueued(text: string, options?: Speech.SpeechOptions) {
+  Speech.speak(text, { ...DEFAULT_OPTIONS, ...options });
+}
+
 export function stopSpeaking() {
   Speech.stop();
 }

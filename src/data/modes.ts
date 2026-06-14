@@ -46,7 +46,7 @@ export const MODES: Mode[] = [
     label: 'SIMPLE',
     spokenLabel: 'Mode Sederhana',
     icon: 'lightning-bolt',
-    color: colors.accent,
+    color: colors.simpleGold,
   },
   {
     key: 'detail',

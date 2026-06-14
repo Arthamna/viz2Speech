@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ModeCard } from './ModeCard';
 import { modeAt } from '../data/modes';
+import { colors } from '../theme/colors';
 
 interface Props {
   /** Index of the active (centered) mode in the MODES array. */
@@ -10,16 +10,15 @@ interface Props {
 }
 
 /**
- * The bottom mode carousel. Shows three cards — previous, active (center),
- * next — exactly like the Figma "Carousel Mode" component. The list is
- * circular, so there is always a card on each side. Mode changes are driven by
- * the two-finger swipe gesture handled in the parent screen.
+ * The bottom mode carousel — the Figma "Carousel Mode" component. It shows
+ * three cards (previous · active · next) centered in a 150px-tall white strip,
+ * with a 15px gap between cards. The list is circular so there is always a card
+ * on each side. Mode changes come from the two-finger swipe in the parent.
  */
 export function CarouselModes({ activeIndex }: Props) {
-  const insets = useSafeAreaInsets();
   return (
     <View
-      style={[styles.container, { paddingBottom: insets.bottom + 12 }]}
+      style={styles.container}
       pointerEvents="none"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
@@ -34,17 +33,15 @@ export function CarouselModes({ activeIndex }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    height: 150,
+    backgroundColor: colors.screen,
     alignItems: 'center',
-    paddingTop: 12,
+    justifyContent: 'center',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
+    gap: 15,
   },
 });

@@ -6,44 +6,34 @@ import { colors } from '../theme/colors';
 interface Props {
   size?: number;
   style?: ViewStyle;
-  /** Pulsing/active look while listening. */
-  active?: boolean;
 }
 
 /**
- * The gold circular microphone affordance seen on the Result and VQA screens.
- * It is purely visual feedback — capture / questions are triggered by gestures,
- * not by tapping it — so it is hidden from the accessibility tree.
+ * The gold circular microphone from the Result and VQA frames — a solid
+ * #FFAE00 disc with a white microphone glyph. In the design it is 110px on the
+ * Result screen and 155px on the VQA listening screen. It is purely visual
+ * feedback (capture / questions are gesture-driven) so it is hidden from the
+ * accessibility tree.
  */
-export function MicButton({ size = 88, style, active = false }: Props) {
+export function MicButton({ size = 110, style }: Props) {
   return (
     <View
       style={[
         styles.btn,
         { width: size, height: size, borderRadius: size / 2 },
-        active && styles.active,
         style,
       ]}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
-      <MaterialCommunityIcons name="microphone" size={size * 0.5} color={colors.textOnDark} />
+      <MaterialCommunityIcons name="microphone" size={size * 0.56} color={colors.textOnDark} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.micGold,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
-    shadowOpacity: 0.5,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  active: {
-    shadowOpacity: 0.9,
-    shadowRadius: 22,
   },
 });

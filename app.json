@@ -32,7 +32,8 @@
           "microphonePermission": "Viz2Speech menggunakan mikrofon untuk mengajukan pertanyaan lanjutan."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-audio"
     ],
     "extra": {
       "eas": {

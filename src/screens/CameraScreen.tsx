@@ -1,7 +1,9 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
+import { useAudioPlayer } from 'expo-audio';
 import {
   ActivityIndicator,
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -11,18 +13,21 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/typography';
 import { MODES, DEFAULT_MODE_INDEX, wrapIndex, modeAt } from '../data/modes';
 import { generateCaption } from '../services/captionService';
-import { speak } from '../services/speech';
+import { speak, speakQueued } from '../services/speech';
 import { TopBar } from '../components/TopBar';
 import { CarouselModes } from '../components/CarouselModes';
 import { MicButton } from '../components/MicButton';
+import { VoiceButton } from '../components/VoiceButton';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Camera'>;
@@ -30,6 +35,12 @@ type Phase = 'scan' | 'processing' | 'result';
 
 const SWIPE_THRESHOLD = 40;
 
+/**
+ * Camera screen — the Figma "Scan / Processing / Result" frames (one screen,
+ * three phases). White screen with the top menu, a windowed camera preview, and
+ * the mode carousel pinned to the bottom. A result shows a dark gradient caption
+ * banner across the top of the preview plus the gold microphone in its center.
+ */
 export function CameraScreen({ navigation }: Props) {
   const isFocused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -39,8 +50,41 @@ export function CameraScreen({ navigation }: Props) {
   const [modeIndex, setModeIndex] = useState(DEFAULT_MODE_INDEX);
   const [phase, setPhase] = useState<Phase>('scan');
   const [caption, setCaption] = useState<string>('');
+  // The captured still shown while processing / on the result, so the preview
+  // looks frozen on the photographed object instead of staying live.
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
 
   const activeMode = modeAt(modeIndex);
+
+  // Looping "please wait" cue played while a photo is being described. The
+  // static asset loops until the processing phase ends.
+  const waitPlayer = useAudioPlayer(require('../assets/wait.mp3'));
+
+  useEffect(() => {
+    waitPlayer.loop = true;
+  }, [waitPlayer]);
+
+  useEffect(() => {
+    if (phase === 'processing') {
+      waitPlayer.seekTo(0);
+      waitPlayer.play();
+    } else {
+      waitPlayer.pause();
+    }
+  }, [phase, waitPlayer]);
+
+  // Returning to this screen (from VQA / Setting / Help, e.g. via the "Kembali"
+  // double-tap) lands back on the live Scan view and re-announces the active
+  // mode — queued so it is heard after the "Kembali" cue.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setPhase('scan');
+      setCaption('');
+      setPhotoUri(null);
+      speakQueued(activeMode.spokenLabel);
+    });
+    return unsubscribe;
+  }, [navigation, activeMode.spokenLabel]);
 
   // --- Actions ---------------------------------------------------------------
 
@@ -51,9 +95,9 @@ export function CameraScreen({ navigation }: Props) {
       speak(MODES[next].spokenLabel);
       return next;
     });
-    // Changing mode starts a fresh scan.
     setPhase('scan');
     setCaption('');
+    setPhotoUri(null);
   }, []);
 
   const capture = useCallback(async () => {
@@ -63,12 +107,15 @@ export function CameraScreen({ navigation }: Props) {
     speak('Memproses gambar');
     try {
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.6 });
+      // Freeze the preview on the captured frame for processing + result.
+      if (photo?.uri) setPhotoUri(photo.uri);
       const text = await generateCaption(activeMode.key, photo?.uri);
       setCaption(text);
       setPhase('result');
       speak(text);
     } catch {
       setPhase('scan');
+      setPhotoUri(null);
       speak('Maaf, gagal mengambil gambar. Silakan coba lagi.');
     }
   }, [phase, activeMode.key]);
@@ -83,7 +130,6 @@ export function CameraScreen({ navigation }: Props) {
   }, [phase, caption, activeMode.key, navigation]);
 
   // --- Gestures --------------------------------------------------------------
-  // runOnJS(true) lets the callbacks call React state setters directly.
 
   const gesture = useMemo(() => {
     const doubleTap = Gesture.Tap()
@@ -126,7 +172,10 @@ export function CameraScreen({ navigation }: Props) {
         </Text>
         <TouchableOpacity
           style={styles.permissionBtn}
-          onPress={requestPermission}
+          onPress={() => {
+            speak('Izinkan akses kamera');
+            requestPermission();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Izinkan akses kamera">
           <Text style={styles.permissionBtnText}>Izinkan Kamera</Text>
@@ -143,48 +192,80 @@ export function CameraScreen({ navigation }: Props) {
     'Usap dua jari untuk mengganti mode. ' +
     'Sentuh tiga jari untuk bertanya lanjutan.';
 
+  // Live camera only while scanning; once a shot is taken we keep the frozen
+  // still on screen through processing and the result.
+  const showFrozen = !!photoUri && phase !== 'scan';
+
   return (
-    <GestureDetector gesture={gesture}>
-      <View
-        style={styles.container}
-        accessible
-        accessibilityLabel={a11yLabel}
-        accessibilityHint="Layar kamera dengan kontrol berbasis gestur.">
-        <StatusBar style="light" />
+    <View style={styles.container}>
+      <StatusBar style="dark" />
 
-        {isFocused && (
-          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
-        )}
-
-        {/* Caption banner — only after a result is produced. */}
-        {phase === 'result' && !!caption && (
-          <View style={[styles.captionBanner, { paddingTop: insets.top + 56 }]}>
-            <Text style={styles.captionText}>{caption}</Text>
-          </View>
-        )}
-
-        {/* Processing overlay. */}
-        {phase === 'processing' && (
-          <View style={styles.processingOverlay} pointerEvents="none">
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.processingText}>Memproses…</Text>
-          </View>
-        )}
-
-        {/* Mic affordance (visual only) once a caption is shown. */}
-        {phase === 'result' && (
-          <View style={styles.micWrap} pointerEvents="none">
-            <MicButton />
-          </View>
-        )}
-
+      {/* TopBar lives outside the camera gesture surface so its chips own their
+          own single-tap (announce) / double-tap (open) handling. */}
+      <View style={{ paddingTop: insets.top }}>
         <TopBar
-          variant="onDark"
           onPressSettings={() => navigation.navigate('Setting')}
           onPressHelp={() => navigation.navigate('Help')}
         />
+      </View>
 
-        <CarouselModes activeIndex={modeIndex} />
+      {/* Windowed camera preview. Kept mounted and toggled with `active` (rather
+          than conditionally rendered) so it never remounts at the wrong size when
+          returning from VQA / Setting / Help. */}
+      <View style={styles.cameraRegion}>
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing="back"
+          active={isFocused}
+        />
+
+        {/* Frozen captured frame over the live preview. */}
+        {showFrozen && (
+          <Image
+            source={{ uri: photoUri! }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
+        )}
+
+        {/* Transparent gesture surface (double-tap capture, 3-finger VQA,
+            2-finger swipe to change mode). */}
+        <GestureDetector gesture={gesture}>
+          <View
+            style={StyleSheet.absoluteFill}
+            accessible
+            accessibilityLabel={a11yLabel}
+            accessibilityHint="Layar kamera dengan kontrol berbasis gestur."
+          />
+        </GestureDetector>
+
+        {/* Caption banner — gradient + uppercase white text, after a result. */}
+        {phase === 'result' && !!caption && (
+          <LinearGradient
+            colors={['rgba(0,0,0,0.92)', 'rgba(0,0,0,0)']}
+            style={styles.captionBanner}
+            pointerEvents="none">
+            <Text style={styles.captionText}>{caption.toUpperCase()}</Text>
+          </LinearGradient>
+        )}
+
+        {/* Processing spinner. */}
+        {phase === 'processing' && (
+          <View style={styles.centerFill} pointerEvents="none">
+            <ActivityIndicator size="large" color={colors.micGold} />
+          </View>
+        )}
+
+        {/* Gold mic, low in the preview (Figma Result frame). Double-tap it to
+            open the follow-up question screen. */}
+        {phase === 'result' && (
+          <View style={styles.resultMic} pointerEvents="box-none">
+            <VoiceButton label="Mikrofon" onActivate={goToVQA}>
+              <MicButton size={110} />
+            </VoiceButton>
+          </View>
+        )}
 
         {/* Web/desktop fallback: a mouse cannot perform the multi-finger
             gestures, so expose the same actions as buttons. */}
@@ -197,7 +278,10 @@ export function CameraScreen({ navigation }: Props) {
           </View>
         )}
       </View>
-    </GestureDetector>
+
+      <CarouselModes activeIndex={modeIndex} />
+      <View style={{ height: insets.bottom, backgroundColor: colors.screen }} />
+    </View>
   );
 }
 
@@ -215,7 +299,10 @@ function WebButton({
   return (
     <TouchableOpacity
       style={[styles.webBtn, big && styles.webBtnBig]}
-      onPress={onPress}
+      onPress={() => {
+        speak(label);
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}>
       <MaterialCommunityIcons
@@ -228,57 +315,52 @@ function WebButton({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.black },
+  container: { flex: 1, backgroundColor: colors.screen },
+
+  cameraRegion: {
+    flex: 1,
+    backgroundColor: colors.black,
+    overflow: 'hidden',
+  },
 
   captionBanner: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.overlay,
-    paddingHorizontal: 24,
-    paddingBottom: 22,
+    minHeight: 165,
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 28,
   },
   captionText: {
     color: colors.textOnDark,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 21,
+    fontFamily: fonts.extrabold,
+    fontSize: 13,
+    lineHeight: 16,
     textAlign: 'center',
   },
 
-  processingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  centerFill: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 14,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  processingText: {
-    color: colors.textOnDark,
-    fontSize: 16,
-    fontWeight: '600',
   },
 
-  micWrap: {
+  // Result mic sits low in the preview (not centered) — see the Figma Result frame.
+  resultMic: {
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: 32,
     alignItems: 'center',
-    justifyContent: 'center',
   },
 
   webControls: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 188,
+    bottom: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -296,12 +378,12 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.micGold,
   },
 
   permissionContainer: {
     flex: 1,
-    backgroundColor: colors.panelAlt,
+    backgroundColor: colors.black,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
@@ -309,6 +391,7 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     color: colors.textOnDark,
+    fontFamily: fonts.semibold,
     fontSize: 17,
     lineHeight: 24,
     textAlign: 'center',
@@ -321,7 +404,7 @@ const styles = StyleSheet.create({
   },
   permissionBtnText: {
     color: colors.textOnDark,
+    fontFamily: fonts.bold,
     fontSize: 16,
-    fontWeight: '700',
   },
 });

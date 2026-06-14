@@ -4,6 +4,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
+import { PlusJakartaSans_700Bold } from '@expo-google-fonts/plus-jakarta-sans';
 
 import { EntryScreen } from './src/screens/EntryScreen';
 import { CameraScreen } from './src/screens/CameraScreen';
@@ -15,6 +24,19 @@ import type { RootStackParamList } from './src/navigation/types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    PlusJakartaSans_700Bold,
+  });
+
+  // Hold the splash until the design fonts are ready so the UI never flashes a
+  // fallback typeface.
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

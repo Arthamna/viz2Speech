@@ -25,21 +25,24 @@ export const VQA_PROMPT = 'Deskripsikan Gambar Tersebut Secara Lebih Detail';
 export const VQA_SAMPLE_ANSWER =
   'Penjelasan Yang Lebih Detail Dari Gambar-Gambar Sebelumnya';
 
-/** Settings rows — display only, mirrors the Figma Settings frame. */
+/**
+ * Settings rows — display only, mirrors the Figma "Setting" frame exactly. The
+ * design uses a small repeating set of gold MaterialIcons glyphs (person /
+ * privacy-tip / notifications / lock) and shows no per-row values.
+ */
 export interface SettingItem {
   label: string;
-  icon: string; // MaterialCommunityIcons name
-  value?: string;
+  icon: string; // MaterialIcons name
 }
 
 export const SETTINGS_ITEMS: SettingItem[] = [
-  { label: 'Language', icon: 'translate', value: 'Bahasa Indonesia' },
-  { label: 'Voice', icon: 'account-voice', value: 'Default' },
-  { label: 'Camera Auto-Flash', icon: 'flash-auto', value: 'Off' },
-  { label: 'Pitch', icon: 'tune-vertical', value: '1.0x' },
-  { label: 'Default Mode', icon: 'shape-outline', value: 'Environment' },
-  { label: 'Gesture Sensitivity', icon: 'gesture-tap', value: 'Medium' },
-  { label: 'History', icon: 'history' },
+  { label: 'Language', icon: 'person-outline' },
+  { label: 'Voice', icon: 'privacy-tip' },
+  { label: 'Camera Auto-Flash', icon: 'notifications-none' },
+  { label: 'Pitch', icon: 'lock-outline' },
+  { label: 'Default Mode', icon: 'person-outline' },
+  { label: 'Gesture Sensitivity', icon: 'privacy-tip' },
+  { label: 'History', icon: 'notifications-none' },
 ];
 
 /** Help screen content — verbatim from the Figma Help frame. */
