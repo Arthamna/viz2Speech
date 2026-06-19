@@ -35,6 +35,11 @@ type Phase = 'scan' | 'processing' | 'result';
 
 const SWIPE_THRESHOLD = 40;
 
+const PROCESSING_MIN_MS = 4000;
+const PROCESSING_MAX_MS = 8000;
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /**
  * Camera screen — the Figma "Scan / Processing / Result" frames (one screen,
  * three phases). White screen with the top menu, a windowed camera preview, and
@@ -110,6 +115,12 @@ export function CameraScreen({ navigation }: Props) {
       // Freeze the preview on the captured frame for processing + result.
       if (photo?.uri) setPhotoUri(photo.uri);
       const text = await generateCaption(activeMode.key, photo?.uri);
+      // Hold on the processing screen (wait.mp3 looping) for a random 4–8s
+      // window, then reveal the result whether or not the audio has finished.
+      const wait =
+        PROCESSING_MIN_MS +
+        Math.random() * (PROCESSING_MAX_MS - PROCESSING_MIN_MS);
+      await delay(wait);
       setCaption(text);
       setPhase('result');
       speak(text);
@@ -119,6 +130,16 @@ export function CameraScreen({ navigation }: Props) {
       speak('Maaf, gagal mengambil gambar. Silakan coba lagi.');
     }
   }, [phase, activeMode.key]);
+
+  // From a result, a double-tap returns to the live Scan view keeping the mode
+  // the user last used, and re-announces that mode.
+  const backToScan = useCallback(() => {
+    Haptics.selectionAsync();
+    setPhase('scan');
+    setCaption('');
+    setPhotoUri(null);
+    speak(activeMode.spokenLabel);
+  }, [activeMode.spokenLabel]);
 
   const goToVQA = useCallback(() => {
     if (phase !== 'result' || !caption) {
@@ -132,11 +153,19 @@ export function CameraScreen({ navigation }: Props) {
   // --- Gestures --------------------------------------------------------------
 
   const gesture = useMemo(() => {
+    // Single tap just announces "Foto" so the user knows the capture target;
+    // it only fires when the double-tap fails (Exclusive below).
+    const singleTap = Gesture.Tap()
+      .numberOfTaps(1)
+      .runOnJS(true)
+      .onEnd(() => speak('Foto'));
+
+    // Double tap: capture while scanning, or return to scan from a result.
     const doubleTap = Gesture.Tap()
       .numberOfTaps(2)
       .maxDuration(320)
       .runOnJS(true)
-      .onEnd(() => capture());
+      .onEnd(() => (phase === 'result' ? backToScan() : capture()));
 
     const threeFingerTap = Gesture.Tap()
       .minPointers(3)
@@ -154,8 +183,12 @@ export function CameraScreen({ navigation }: Props) {
         }
       });
 
-    return Gesture.Race(threeFingerTap, twoFingerSwipe, doubleTap);
-  }, [capture, goToVQA, changeMode]);
+    return Gesture.Race(
+      threeFingerTap,
+      twoFingerSwipe,
+      Gesture.Exclusive(doubleTap, singleTap),
+    );
+  }, [capture, goToVQA, changeMode, backToScan, phase]);
 
   // --- Permission gate -------------------------------------------------------
 
