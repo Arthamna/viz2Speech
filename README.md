@@ -1,6 +1,15 @@
 How to Run :
 
 ```
+# compile
+npm install expo
+
+npx expo run:android
+
+# if u want spesify target name
+
+npx expo run:android --device {{device_name}}
+
 npx expo start
 ```
 
