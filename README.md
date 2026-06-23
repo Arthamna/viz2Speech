@@ -1,5 +1,12 @@
 How to Run :
 
+Prereq :
+
+npx expo install expo-dev-client
+
+(to compile/dev on device)
+
+
 ```
 # compile
 npm install expo
@@ -12,6 +19,7 @@ npx expo run:android --device {{device_name}}
 
 npx expo start
 ```
+
 
 If u have android studio and android device :
 
