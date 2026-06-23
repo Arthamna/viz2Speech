@@ -1,8 +1,29 @@
 How to Run :
 
+Prereq :
+
+npx expo install expo-dev-client
+
+
+
+(to compile/dev on device)
+
+
 ```
+# compile
+npm install expo
+
+npm install expo-splash-screen
+
+npx expo run:android
+
+# if u want spesify target name
+
+npx expo run:android --device {{device_name}}
+
 npx expo start
 ```
+
 
 If u have android studio and android device :
 

@@ -4,6 +4,7 @@
     "slug": "viz2speech",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./src/assets/app-icon.png",
     "scheme": "viz2speech",
     "userInterfaceStyle": "automatic",
     "ios": {
@@ -22,7 +23,11 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.iasha.viz2speech"
+      "package": "com.iasha.viz2speech",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/app-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
       [
